@@ -47,7 +47,7 @@ Add it to your `requirements.yml` (pin the tag to the release you want):
 collections:
   - name: https://github.com/MarioMoura/pzmonitor.git#ansible
     type: git
-    version: v0.2.0-beta.1
+    version: v0.2.0
 ```
 
 Install and use it:

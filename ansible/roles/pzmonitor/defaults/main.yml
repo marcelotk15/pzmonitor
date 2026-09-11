@@ -1,5 +1,5 @@
 ---
-pzmonitor_version: "0.2.0-beta.1"
+pzmonitor_version: "0.2.0"
 pzmonitor_arch: amd64
 pzmonitor_user: pzmonitor
 pzmonitor_group: "{{ pzmonitor_user }}"
