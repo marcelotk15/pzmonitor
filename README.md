@@ -122,6 +122,24 @@ Copy `.env.example` as a reference:
 cp .env.example .env
 ```
 
+## Map panels
+
+The dashboard has two Geomap panels (Survivors Map, Live path of a player) that
+draw player positions on top of the game map. They need XYZ tiles of a top-down
+render of the map, served over HTTP. Two scripts produce them:
+
+- `scripts/tile_cells.py CELLDIR OUTDIR` — from per-cell images (one
+  `{cx}_{cy}.webp` per 256x256-tile cell, e.g. the 1024 px "thumbs" published by
+  pzfans.com, 4 px per world tile). Bounded memory, zoom 10-19, ~75k tiles.
+- `scripts/tile_map.py MAP.jpg OUTDIR` — from one stitched image at 1 px per world
+  tile (e.g. the pzmap.org top-down export, 19968x16128 for B42). Zoom 10-18.
+
+Point the dashboard at the tiles by replacing the `${PZMAP_TILES_URL}`
+placeholder with the template URL, e.g.
+`https://grafana.example/pzmap/{z}/{x}/{y}.webp`, the same way `${DS_PROMETHEUS}`
+is replaced. World coordinates are projected onto the equator at 1 m per tile:
+`lon = x / 111319.4908`, `lat = -y / 111319.4908`.
+
 ## Prometheus
 
 Add a scrape job to your `prometheus.yml`:
@@ -131,6 +149,38 @@ scrape_configs:
   - job_name: pzmonitor
     static_configs:
       - targets: ["localhost:9101"]
+```
+
+## Built-in server exporter
+
+Build 42 servers ship their own Prometheus endpoint, enabled with a JVM flag
+(`-DprometheusPort=9105` in `ProjectZomboid64.json`). It exposes JVM/process
+metrics, RakNet network stats, world counters (`game{parameter="players"}`,
+`zombies-total`, `loaded-cells`, ...), the same "today" kill counters as RCON
+`stats`, and live player positions (`player_x`/`player_y{id,name}`, refreshed
+every `MultiplayerStatisticsPeriod` seconds) while players are online.
+
+pzmonitor is complementary, not a replacement: it adds everything that comes
+from RCON (player list, mods, server options) and from `players.db`
+(per-character stats, deaths, kills, perks, positions of offline players), and
+runs outside the JVM so it keeps reporting across server restarts. The
+recommended setup scrapes both; the bundled dashboard uses the built-in
+endpoint for the live map and pzmonitor for the rest:
+
+```yaml
+  - job_name: pzserver
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:9105"]
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "player_(x|y)"
+        target_label: __name__
+        replacement: "pz_player_${1}"
+      - source_labels: [name]
+        target_label: username
+      - regex: "name|id"
+        action: labeldrop
 ```
 
 ## Endpoints

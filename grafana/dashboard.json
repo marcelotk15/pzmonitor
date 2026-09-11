@@ -510,7 +510,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum((round(increase(pz_character_dead[$__range])) >= resets(pz_character_hours_survived[$__range])) or resets(pz_character_hours_survived[$__range])) or vector(0)",
+          "expr": "sum((round(increase(pz_character_dead{username!~\"$exclude\"}[$__range])) >= resets(pz_character_hours_survived{username!~\"$exclude\"}[$__range])) or resets(pz_character_hours_survived{username!~\"$exclude\"}[$__range])) or vector(0)",
           "instant": true,
           "legendFormat": "",
           "refId": "A"
@@ -1668,7 +1668,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "pz_player_online",
+          "expr": "pz_player_online{username!~\"$exclude\"}",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
@@ -1750,7 +1750,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "count_over_time(pz_player_online[$__range]) * 10",
+          "expr": "count_over_time(pz_player_online{username!~\"$exclude\"}[$__range]) * 10",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -2299,7 +2299,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "count(pz_character_dead == 0) or vector(0)",
+          "expr": "count(pz_character_dead{username!~\"$exclude\"} == 0) or vector(0)",
           "refId": "A",
           "legendFormat": "",
           "instant": true,
@@ -2365,7 +2365,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "count(pz_character_dead == 1) or vector(0)",
+          "expr": "count(pz_character_dead{username!~\"$exclude\"} == 1) or vector(0)",
           "refId": "A",
           "legendFormat": "",
           "instant": true,
@@ -2431,7 +2431,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(pz_character_zombie_kills)",
+          "expr": "sum(pz_character_zombie_kills{username!~\"$exclude\"})",
           "refId": "A",
           "legendFormat": "",
           "instant": true,
@@ -2497,7 +2497,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(pz_character_hours_survived)",
+          "expr": "sum(pz_character_hours_survived{username!~\"$exclude\"})",
           "refId": "A",
           "legendFormat": "",
           "instant": true,
@@ -2506,10 +2506,10 @@
       ]
     },
     {
-      "id": 111,
-      "type": "bargauge",
-      "title": "Health",
-      "description": "Average body part health per character",
+      "id": 116,
+      "type": "geomap",
+      "title": "Survivors Map",
+      "description": "Last saved position of every character (players.db). Tiles: b42map.com top-down map, 1 px = 1 world tile.",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -2518,53 +2518,123 @@
         "x": 12,
         "y": 60,
         "w": 12,
-        "h": 8
+        "h": 22
       },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "min": 0,
-          "max": 100,
-          "unit": "percent",
-          "decimals": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": 0
               },
               {
-                "color": "orange",
-                "value": 50
-              },
-              {
-                "color": "green",
-                "value": 80
+                "color": "red",
+                "value": 1
               }
             ]
-          }
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "alive"
+                },
+                "1": {
+                  "text": "dead"
+                }
+              }
+            }
+          ]
         },
         "overrides": []
       },
       "options": {
-        "displayMode": "gradient",
-        "orientation": "horizontal",
-        "showUnfilled": true,
-        "namePlacement": "auto",
-        "sizing": "auto",
-        "valueMode": "color",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "view": {
+          "id": "fit",
+          "allLayers": true,
+          "lastOnly": false,
+          "padding": 10,
+          "zoom": 17,
+          "lat": 0,
+          "lon": 0,
+          "shared": false
         },
-        "minVizHeight": 16,
-        "maxVizHeight": 300
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showScale": false,
+          "showMeasure": false,
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Project Zomboid",
+          "config": {
+            "url": "${PZMAP_TILES_URL}",
+            "attribution": "map: pzfans.com",
+            "minZoom": 10,
+            "maxZoom": 19
+          }
+        },
+        "tooltip": {
+          "mode": "details"
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Survivors",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": false,
+              "style": {
+                "size": {
+                  "fixed": 7
+                },
+                "color": {
+                  "field": "Dead",
+                  "fixed": "green"
+                },
+                "opacity": 0.9,
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "text": {
+                  "mode": "field",
+                  "field": "User",
+                  "fixed": ""
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": -12,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "mode": "mod"
+                }
+              }
+            }
+          }
+        ]
       },
       "pluginVersion": "12.3.3",
       "targets": [
@@ -2573,11 +2643,56 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "pz_character_health",
           "refId": "A",
-          "legendFormat": "{{username}}",
+          "expr": "sum by (username) (pz_character_position{username!~\"$exclude\",axis=\"x\"}) / 111319.4908",
+          "legendFormat": "",
           "instant": true,
-          "range": false
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "refId": "B",
+          "expr": "sum by (username) (pz_character_position{username!~\"$exclude\",axis=\"y\"}) / -111319.4908",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "refId": "C",
+          "expr": "sum by (username) (pz_character_dead{username!~\"$exclude\"})",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "username": "User",
+              "Value #A": "lon",
+              "Value #B": "lat",
+              "Value #C": "Dead"
+            }
+          }
         }
       ]
     },
@@ -2718,7 +2833,7 @@
           "range": false,
           "format": "table",
           "legendFormat": "",
-          "expr": "max by (username, name, profession) (pz_character_hours_survived * on(username) group_left(name, profession) pz_character_info)"
+          "expr": "max by (username, name, profession) (pz_character_hours_survived{username!~\"$exclude\"} * on(username) group_left(name, profession) pz_character_info{username!~\"$exclude\"})"
         },
         {
           "datasource": {
@@ -2730,7 +2845,7 @@
           "range": false,
           "format": "table",
           "legendFormat": "",
-          "expr": "max by (username, name, profession) (pz_character_zombie_kills * on(username) group_left(name, profession) pz_character_info)"
+          "expr": "max by (username, name, profession) (pz_character_zombie_kills{username!~\"$exclude\"} * on(username) group_left(name, profession) pz_character_info{username!~\"$exclude\"})"
         },
         {
           "datasource": {
@@ -2742,7 +2857,7 @@
           "range": false,
           "format": "table",
           "legendFormat": "",
-          "expr": "max by (username, name, profession) (pz_character_survivor_kills * on(username) group_left(name, profession) pz_character_info)"
+          "expr": "max by (username, name, profession) (pz_character_survivor_kills{username!~\"$exclude\"} * on(username) group_left(name, profession) pz_character_info{username!~\"$exclude\"})"
         },
         {
           "datasource": {
@@ -2754,7 +2869,7 @@
           "range": false,
           "format": "table",
           "legendFormat": "",
-          "expr": "max by (username, name, profession) (pz_character_health * on(username) group_left(name, profession) pz_character_info)"
+          "expr": "max by (username, name, profession) (pz_character_health{username!~\"$exclude\"} * on(username) group_left(name, profession) pz_character_info{username!~\"$exclude\"})"
         },
         {
           "datasource": {
@@ -2766,7 +2881,7 @@
           "range": false,
           "format": "table",
           "legendFormat": "",
-          "expr": "max by (username, name, profession) (pz_character_dead * on(username) group_left(name, profession) pz_character_info)"
+          "expr": "max by (username, name, profession) (pz_character_dead{username!~\"$exclude\"} * on(username) group_left(name, profession) pz_character_info{username!~\"$exclude\"})"
         }
       ],
       "transformations": [
@@ -2801,62 +2916,6 @@
               "Value #F": "Dead"
             }
           }
-        }
-      ]
-    },
-    {
-      "id": 113,
-      "type": "timeseries",
-      "title": "Zombie Kills by Survivor",
-      "description": "Per-character kill counter from players.db; updates when the server saves the character",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "gridPos": {
-        "x": 12,
-        "y": 68,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "unit": "none",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "stepAfter",
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "showPoints": "never",
-            "spanNulls": true
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.3",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "pz_character_zombie_kills",
-          "refId": "A",
-          "legendFormat": "{{username}}"
         }
       ]
     },
@@ -2910,26 +2969,394 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "pz_character_hours_survived",
+          "expr": "pz_character_hours_survived{username!~\"$exclude\"}",
           "refId": "A",
           "legendFormat": "{{username}}"
         }
       ]
     },
     {
-      "id": 115,
-      "type": "timeseries",
-      "title": "Deaths",
-      "description": "Character deaths per hour (players.db)",
+      "id": 118,
+      "type": "stat",
+      "title": "Live tracking status",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
-        "x": 12,
-        "y": 76,
+        "x": 0,
+        "y": 82,
+        "w": 24,
+        "h": 3
+      },
+      "description": "Live positions come from the game server's built-in Prometheus endpoint, not from pzmonitor. Start the server with -DprometheusPort=9105 (JVM arg), set MultiplayerStatisticsPeriod=2 in the server ini, and scrape that port as Prometheus job \"pzserver\" (see README: player_x/player_y relabelled to pz_player_x/pz_player_y).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 100
+              },
+              {
+                "color": "green",
+                "value": 101
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "No data: the server is not exporting metrics. Start it with -DprometheusPort=9105 and MultiplayerStatisticsPeriod=2, and scrape it as Prometheus job \"pzserver\"",
+                  "color": "red"
+                },
+                "100": {
+                  "text": "Server endpoint scraped, no player online",
+                  "color": "orange"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 101,
+                "to": 10000,
+                "result": {
+                  "text": "Live tracking active",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 16
+        }
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "refId": "A",
+          "instant": true,
+          "range": false,
+          "legendFormat": "",
+          "expr": "100 * (sum(up{job=\"pzserver\"}) or vector(0)) + (count(pz_player_x{username!~\"$exclude\"}) or vector(0))"
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "type": "geomap",
+      "title": "Live path of $player (blue = start \u2192 red = end)",
+      "description": "Live positions of the selected player over the dashboard time range, from the server's built-in Prometheus endpoint (-DprometheusPort, updated every MultiplayerStatisticsPeriod seconds and scraped every 5 s). Blue (start) to red (end), arrows point in the direction of travel; the red dot is the latest position. Requires the pzserver Prometheus job (player_x/player_y relabelled to pz_player_x/pz_player_y with a username label).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 85,
+        "w": 24,
+        "h": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-BlYlRd"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Order"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-BlYlRd"
+                }
+              },
+              {
+                "id": "displayName",
+                "value": "Time order: blue = start, red = end"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "view": {
+          "id": "fit",
+          "allLayers": true,
+          "lastOnly": false,
+          "padding": 8,
+          "zoom": 18,
+          "lat": 0,
+          "lon": 0,
+          "shared": false
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showScale": false,
+          "showMeasure": false,
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Project Zomboid",
+          "config": {
+            "url": "${PZMAP_TILES_URL}",
+            "attribution": "map: pzfans.com",
+            "minZoom": 10,
+            "maxZoom": 19
+          }
+        },
+        "tooltip": {
+          "mode": "details"
+        },
+        "layers": [
+          {
+            "type": "route",
+            "name": "Path: blue = start, red = end",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "style": {
+                "color": {
+                  "field": "Order",
+                  "fixed": "#ff9830"
+                },
+                "opacity": 1,
+                "lineWidth": 4,
+                "size": {
+                  "fixed": 3
+                },
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                }
+              },
+              "showLegend": true,
+              "arrow": 0
+            }
+          },
+          {
+            "type": "markers",
+            "name": "Latest",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "config": {
+              "showLegend": false,
+              "style": {
+                "size": {
+                  "fixed": 10
+                },
+                "color": {
+                  "fixed": "red"
+                },
+                "opacity": 1,
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "text": {
+                  "mode": "fixed",
+                  "fixed": "",
+                  "field": ""
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "mode": "mod"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "refId": "A",
+          "expr": "pz_player_x{username!~\"$exclude\",username=\"$player\"} / 111319.4908",
+          "legendFormat": "lon"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "refId": "B",
+          "expr": "pz_player_y{username!~\"$exclude\",username=\"$player\"} / -111319.4908",
+          "legendFormat": "lat"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "Time",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "mode": "index",
+            "alias": "Order",
+            "index": {
+              "asPercentile": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "type": "stat",
+      "title": "Select player",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Click a name to show that player's live path on the map above.",
+      "gridPos": {
+        "x": 0,
+        "y": 101,
+        "w": 24,
+        "h": 3
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "refId": "A",
+          "expr": "count by (username) (count_over_time(pz_player_x{username!~\"$exclude\"}[$__range]))",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{username}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name",
+        "colorMode": "none",
+        "graphMode": "none",
+        "orientation": "vertical",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 16
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixed": "dark-blue"
+          },
+          "links": [
+            {
+              "title": "Select ${__field.labels.username}",
+              "url": "/d/pzmonitor?var-player=${__field.labels.username}&var-exclude=${exclude}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "pluginVersion": "12.3.3",
+      "links": []
+    },
+    {
+      "id": 113,
+      "type": "timeseries",
+      "title": "Zombie Kills by Survivor",
+      "description": "Per-character kill counter from players.db; updates when the server saves the character",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 104,
         "w": 12,
-        "h": 6
+        "h": 8
       },
       "fieldConfig": {
         "defaults": {
@@ -2966,7 +3393,63 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum((round(increase(pz_character_dead[1h])) >= resets(pz_character_hours_survived[1h])) or resets(pz_character_hours_survived[1h])) or vector(0)",
+          "expr": "pz_character_zombie_kills{username!~\"$exclude\"}",
+          "refId": "A",
+          "legendFormat": "{{username}}"
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "type": "timeseries",
+      "title": "Deaths",
+      "description": "Character deaths per hour (players.db)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 104,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum((round(increase(pz_character_dead{username!~\"$exclude\"}[1h])) >= resets(pz_character_hours_survived{username!~\"$exclude\"}[1h])) or resets(pz_character_hours_survived{username!~\"$exclude\"}[1h])) or vector(0)",
           "refId": "A",
           "legendFormat": "deaths"
         }
@@ -2978,7 +3461,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 84
+        "y": 112
       },
       "id": 104,
       "panels": [],
@@ -3060,7 +3543,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 85
+        "y": 113
       },
       "id": 40,
       "options": {
@@ -3167,7 +3650,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 85
+        "y": 113
       },
       "id": 41,
       "options": {
@@ -3212,7 +3695,46 @@
     "gaming"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "exclude",
+        "label": "Exclude players (regex)",
+        "type": "textbox",
+        "query": "admin",
+        "current": {
+          "text": "admin",
+          "value": "admin"
+        },
+        "options": [
+          {
+            "text": "admin",
+            "value": "admin",
+            "selected": true
+          }
+        ],
+        "hide": 0
+      },
+      {
+        "name": "player",
+        "label": "Player",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "query": {
+          "query": "label_values(pz_character_position{username!~\"$exclude\"}, username)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "definition": "label_values(pz_character_position{username!~\"$exclude\"}, username)",
+        "multi": false,
+        "current": {},
+        "options": [],
+        "hide": 2
+      }
+    ]
   },
   "time": {
     "from": "now-6h",
